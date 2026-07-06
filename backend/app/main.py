@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+from sqlalchemy import text
+
+from app.database.database import engine
 
 app = FastAPI(
     title="DocuMind AI",
@@ -20,3 +23,23 @@ def health_check():
         "status": "ok",
         "service": "documind-ai-backend"
     }
+
+
+@app.get("/db-health")
+def database_health_check():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+
+        return {
+            "status": "ok",
+            "database": "connected",
+            "service": "postgresql"
+        }
+
+    except Exception as error:
+        return {
+            "status": "error",
+            "database": "disconnected",
+            "detail": str(error)
+        }
