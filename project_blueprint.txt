@@ -1,0 +1,144 @@
+DocuMind AI — Project Blueprint & Overview
+
+DocuMind AI is a multilingual document intelligence platform based on OCR, semantic search, vector databases, and Retrieval-Augmented Generation (RAG). This document serves as a centralized reference for your Master's End-of-Studies Project (PFE).
+
+---
+
+1. Project Identity & Architecture
+
+                    ┌────────────────────────┐
+                    │    FastAPI Backend     │
+                    └───────────┬────────────┘
+                                │
+               ┌────────────────┴────────────────┐
+               ▼                                 ▼
+   ┌──────────────────────┐           ┌──────────────────────┐
+   │ Relational Database  │           │   Vector Database    │
+   │  PostgreSQL (v16)    │           │     Qdrant DB        │
+   │                      │           │                      │
+   │ - Users & Auth       │           │ - Text Chunk Vectors │
+   │ - Document Metadata  │           │ - Semantic Metadata  │
+   │ - Parsing Job States │           │ - Fast Cosine Search │
+   └──────────────────────┘           └──────────────────────┘
+
+* Target Scope: A production-grade AI portfolio project providing secure document upload, structure-preserving extraction, semantic context indexing, and factual, source-backed answers.
+* Active Directory: C:\Users\jook\documind-ai
+
+---
+
+2. Codebase Map (Current State)
+
+The project is structured cleanly, separating backend development from the future Next.js frontend:
+
+documind-ai/
+├── .env                  # Live environment configuration
+├── .env.example          # Template for database credentials
+├── docker-compose.yml    # Database & service orchestration
+├── README.md             # Developer setup instructions
+├── frontend/             # [Empty] Reserved for frontend client
+├── docs/                 # [Empty] Reserved for thesis documentation
+├── demo/                 # [Empty] Reserved for demo assets/data
+└── backend/              # Core API server
+    ├── Dockerfile        # Container recipe
+    ├── requirements.txt  # Python requirements
+    └── app/              # Python application package
+        ├── main.py       # API entrypoint (root routes & health)
+        ├── api/          # Route controllers
+        ├── core/         # Settings and security config
+        ├── database/     # SQLAlchemy connection & session setup
+        ├── models/       # Database schemas (Postgres tables)
+        ├── schemas/      # Pydantic validation models
+        ├── services/     # RAG, Vector search, and LLM integrations
+        ├── ocr/          # OCR engines (scanned doc processing)
+        ├── rag/          # Search & chunking pipelines
+        └── tests/        # Pytest test suite
+
+---
+
+3. Core System Configurations
+
+A. Environment Configuration (.env)
+DATABASE_URL=postgresql://documind:documind_password@postgres:5432/documind_db
+QDRANT_URL=http://qdrant:6333
+APP_NAME=DocuMind AI
+ENVIRONMENT=development
+
+B. Docker Orchestration (docker-compose.yml)
+Spawns three primary services:
+1. backend: Custom Python 3.11-slim container running FastAPI (port 8000).
+2. postgres: PostgreSQL 16 server (port 5432) with a persistent data volume.
+3. qdrant: Qdrant Vector Search engine (port 6333) with a persistent storage volume.
+
+---
+
+4. Current File Implementations
+
+Backend App Configurations (backend/app/core/config.py)
+Reads configurations safely from .env using pydantic-settings:
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    app_name: str = "DocuMind AI"
+    environment: str = "development"
+    database_url: str
+    qdrant_url: str
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
+settings = Settings()
+
+Database Session (backend/app/database/database.py)
+Configures the connection pool and dependency injection (get_db) for routes:
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+from app.core.config import settings
+
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True,
+)
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+---
+
+5. Master of AI PFE Strategy
+
+To elevate this project from a standard RAG application to an academic Master of AI thesis, the following modules are designed:
+
+A. Layout-Aware Parsing (Advanced OCR)
+* The Problem: Simple text extraction strips out structural data like tables, bullet points, headers, and images, rendering RAG outputs low-quality.
+* Solution:
+    * Integrate layout segmentation models (like Microsoft's LayoutLM or Meta's Nougat).
+    * Parse tables into Markdown or HTML structures before generating embeddings so the LLM retains structured data.
+
+B. Hybrid Search & Reranking (Advanced Retrieval)
+* Semantic Vector Search: Great for abstract conceptual matching (Qdrant).
+* BM25 Keyword Search: Great for finding specific IDs, codes, names, or technical terms.
+* Reranking:
+    1. Retrieve the top 50 matches using a combined Reciprocal Rank Fusion (RRF) score.
+    2. Feed matches through a Cross-Encoder model (e.g., bge-reranker-large) to select the top 5 most contextually relevant chunks.
+
+C. System Evaluation & Benchmarks (The Research Thesis Core)
+* Tooling: Integrate Ragas (Retrieval Augmented Generation Assessment) to run mathematical, LLM-assisted evaluations on your pipeline.
+* Key Metrics to Report:
+    * Context Precision & Context Recall: Evaluates search accuracy.
+    * Faithfulness: Detects hallucinations (checks if the answer is derived directly from the document).
+    * Answer Relevance: Measures if the generation directly addresses the user's prompt.
