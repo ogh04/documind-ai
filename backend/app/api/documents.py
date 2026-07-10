@@ -13,10 +13,12 @@ from app.models.user import User
 from app.schemas.document import DocumentRead
 from app.schemas.document_chunk import DocumentChunkRead
 from app.services.chunking_service import create_chunks_from_extracted_text
+from app.services.embedding_service import embed_passages
 from app.services.extraction_service import (
     extract_text_from_document,
     validate_file_exists,
 )
+from app.services.qdrant_service import upsert_document_chunks_to_qdrant
 
 
 router = APIRouter(
@@ -28,6 +30,7 @@ router = APIRouter(
 DOCUMENT_STATUS_UPLOADED = "uploaded"
 DOCUMENT_STATUS_PROCESSING = "processing"
 DOCUMENT_STATUS_PROCESSED = "processed"
+DOCUMENT_STATUS_INDEXED = "indexed"
 DOCUMENT_STATUS_FAILED = "failed"
 
 
@@ -190,6 +193,78 @@ def get_document_chunks(
     )
 
     return chunks
+
+
+@router.post("/{document_id}/index")
+def index_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    document = get_user_document(
+        document_id=document_id,
+        db=db,
+        current_user=current_user,
+    )
+
+    if document.status not in {
+        DOCUMENT_STATUS_PROCESSED,
+        DOCUMENT_STATUS_INDEXED,
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document must be processed before indexing.",
+        )
+
+    chunks = (
+        db.query(DocumentChunk)
+        .filter(DocumentChunk.document_id == document.id)
+        .order_by(DocumentChunk.chunk_index.asc())
+        .all()
+    )
+
+    if not chunks:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No chunks found for this document. Process the document first.",
+        )
+
+    try:
+        chunk_texts = [
+            chunk.text
+            for chunk in chunks
+        ]
+
+        embeddings = embed_passages(chunk_texts)
+
+        indexed_count = upsert_document_chunks_to_qdrant(
+            document=document,
+            chunks=chunks,
+            embeddings=embeddings,
+            user_id=current_user.id,
+        )
+
+        document.status = DOCUMENT_STATUS_INDEXED
+        db.commit()
+        db.refresh(document)
+
+        return {
+            "document_id": document.id,
+            "original_filename": document.original_filename,
+            "status": DOCUMENT_STATUS_INDEXED,
+            "indexed_chunks": indexed_count,
+            "collection": settings.qdrant_collection_name,
+            "embedding_provider": settings.embedding_provider,
+            "embedding_model": settings.embedding_model_name,
+            "vector_size": settings.embedding_vector_size,
+            "message": "Document chunks indexed successfully in Qdrant.",
+        }
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Document indexing failed: {str(error)}",
+        ) from error
 
 
 @router.post("/{document_id}/process")
