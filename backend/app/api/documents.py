@@ -10,6 +10,10 @@ from app.database.database import get_db
 from app.models.document import Document
 from app.models.user import User
 from app.schemas.document import DocumentRead
+from app.services.extraction_service import (
+    extract_text_from_document,
+    validate_file_exists,
+)
 
 
 router = APIRouter(
@@ -101,3 +105,77 @@ async def upload_document(
     db.refresh(document)
 
     return document
+
+
+@router.post("/{document_id}/extract")
+def extract_document_text(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.owner_id == current_user.id,
+        )
+        .first()
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    if document.file_type not in {"pdf", "docx"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Text extraction is currently supported only for PDF and DOCX files. Images will be handled later with OCR.",
+        )
+
+    try:
+        validate_file_exists(document.file_path)
+
+        extracted_text = extract_text_from_document(
+            file_path=document.file_path,
+            file_type=document.file_type,
+        )
+
+    except FileNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Text extraction failed: {str(error)}",
+        ) from error
+
+    if not extracted_text:
+        document.status = "extraction_empty"
+        db.commit()
+
+        return {
+            "document_id": document.id,
+            "original_filename": document.original_filename,
+            "file_type": document.file_type,
+            "status": "extraction_empty",
+            "text_length": 0,
+            "extracted_text": "",
+            "message": "No selectable text was found. This may be a scanned document and will require OCR later.",
+        }
+
+    document.status = "extracted"
+    db.commit()
+
+    return {
+        "document_id": document.id,
+        "original_filename": document.original_filename,
+        "file_type": document.file_type,
+        "status": "extracted",
+        "text_length": len(extracted_text),
+        "extracted_text": extracted_text,
+    }
