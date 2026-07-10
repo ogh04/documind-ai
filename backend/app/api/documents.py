@@ -22,6 +22,12 @@ router = APIRouter(
 )
 
 
+DOCUMENT_STATUS_UPLOADED = "uploaded"
+DOCUMENT_STATUS_PROCESSING = "processing"
+DOCUMENT_STATUS_PROCESSED = "processed"
+DOCUMENT_STATUS_FAILED = "failed"
+
+
 ALLOWED_EXTENSIONS = {
     ".pdf": "pdf",
     ".docx": "docx",
@@ -37,6 +43,29 @@ ALLOWED_CONTENT_TYPES = {
     "image/png",
     "image/jpeg",
 }
+
+
+def get_user_document(
+    document_id: int,
+    db: Session,
+    current_user: User,
+) -> Document:
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.owner_id == current_user.id,
+        )
+        .first()
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    return document
 
 
 @router.post(
@@ -97,7 +126,7 @@ async def upload_document(
         file_type=ALLOWED_EXTENSIONS[file_extension],
         file_path=str(file_path),
         file_size=file_size,
-        status="uploaded",
+        status=DOCUMENT_STATUS_UPLOADED,
     )
 
     db.add(document)
@@ -107,34 +136,58 @@ async def upload_document(
     return document
 
 
-@router.post("/{document_id}/extract")
-def extract_document_text(
+@router.get("/{document_id}/status")
+def get_document_status(
     document_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    document = (
-        db.query(Document)
-        .filter(
-            Document.id == document_id,
-            Document.owner_id == current_user.id,
-        )
-        .first()
+    document = get_user_document(
+        document_id=document_id,
+        db=db,
+        current_user=current_user,
     )
 
-    if document is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
-        )
+    return {
+        "document_id": document.id,
+        "original_filename": document.original_filename,
+        "file_type": document.file_type,
+        "status": document.status,
+        "owner_id": document.owner_id,
+        "created_at": document.created_at,
+        "updated_at": document.updated_at,
+    }
 
-    if document.file_type not in {"pdf", "docx"}:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Text extraction is currently supported only for PDF and DOCX files. Images will be handled later with OCR.",
-        )
+
+@router.post("/{document_id}/process")
+def process_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    document = get_user_document(
+        document_id=document_id,
+        db=db,
+        current_user=current_user,
+    )
+
+    document.status = DOCUMENT_STATUS_PROCESSING
+    db.commit()
+    db.refresh(document)
 
     try:
+        if document.file_type not in {"pdf", "docx"}:
+            document.status = DOCUMENT_STATUS_FAILED
+            db.commit()
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Processing is currently supported only for PDF and DOCX files. "
+                    "Images and scanned documents will be handled later with OCR."
+                ),
+            )
+
         validate_file_exists(document.file_path)
 
         extracted_text = extract_text_from_document(
@@ -142,40 +195,45 @@ def extract_document_text(
             file_type=document.file_type,
         )
 
-    except FileNotFoundError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        ) from error
+        if not extracted_text:
+            document.status = DOCUMENT_STATUS_FAILED
+            db.commit()
 
-    except Exception as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Text extraction failed: {str(error)}",
-        ) from error
+            return {
+                "document_id": document.id,
+                "original_filename": document.original_filename,
+                "file_type": document.file_type,
+                "status": DOCUMENT_STATUS_FAILED,
+                "text_length": 0,
+                "message": (
+                    "No selectable text was found. This may be a scanned document "
+                    "and will require OCR later."
+                ),
+                "extracted_text": "",
+            }
 
-    if not extracted_text:
-        document.status = "extraction_empty"
+        document.status = DOCUMENT_STATUS_PROCESSED
         db.commit()
+        db.refresh(document)
 
         return {
             "document_id": document.id,
             "original_filename": document.original_filename,
             "file_type": document.file_type,
-            "status": "extraction_empty",
-            "text_length": 0,
-            "extracted_text": "",
-            "message": "No selectable text was found. This may be a scanned document and will require OCR later.",
+            "status": DOCUMENT_STATUS_PROCESSED,
+            "text_length": len(extracted_text),
+            "message": "Document processed successfully.",
+            "extracted_text": extracted_text,
         }
 
-    document.status = "extracted"
-    db.commit()
+    except HTTPException:
+        raise
 
-    return {
-        "document_id": document.id,
-        "original_filename": document.original_filename,
-        "file_type": document.file_type,
-        "status": "extracted",
-        "text_length": len(extracted_text),
-        "extracted_text": extracted_text,
-    }
+    except Exception as error:
+        document.status = DOCUMENT_STATUS_FAILED
+        db.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Document processing failed: {str(error)}",
+        ) from error
