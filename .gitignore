@@ -11,5 +11,7 @@ node_modules/
 dist/
 build/
 .continue/
+backend/uploads/
+uploads/
 
 *.log
