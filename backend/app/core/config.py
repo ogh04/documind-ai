@@ -13,6 +13,9 @@ class Settings(BaseSettings):
 
     upload_dir: str = "uploads"
     max_upload_size_mb: int = 20
+    embedding_provider: str = "local"
+    embedding_model_name: str = "intfloat/multilingual-e5-small"
+    embedding_vector_size: int = 384
 
     model_config = SettingsConfigDict(
         env_file=".env",
