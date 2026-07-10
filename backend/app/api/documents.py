@@ -45,6 +45,14 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 
+PROCESSABLE_FILE_TYPES = {
+    "pdf",
+    "docx",
+    "png",
+    "jpg",
+}
+
+
 def get_user_document(
     document_id: int,
     db: Session,
@@ -176,15 +184,14 @@ def process_document(
     db.refresh(document)
 
     try:
-        if document.file_type not in {"pdf", "docx"}:
+        if document.file_type not in PROCESSABLE_FILE_TYPES:
             document.status = DOCUMENT_STATUS_FAILED
             db.commit()
 
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
-                    "Processing is currently supported only for PDF and DOCX files. "
-                    "Images and scanned documents will be handled later with OCR."
+                    "Processing is currently supported only for PDF, DOCX, PNG, and JPG files."
                 ),
             )
 
@@ -205,10 +212,7 @@ def process_document(
                 "file_type": document.file_type,
                 "status": DOCUMENT_STATUS_FAILED,
                 "text_length": 0,
-                "message": (
-                    "No selectable text was found. This may be a scanned document "
-                    "and will require OCR later."
-                ),
+                "message": "No text could be extracted from this document.",
                 "extracted_text": "",
             }
 
