@@ -8,8 +8,11 @@ from app.api.auth import get_current_user
 from app.core.config import settings
 from app.database.database import get_db
 from app.models.document import Document
+from app.models.document_chunk import DocumentChunk
 from app.models.user import User
 from app.schemas.document import DocumentRead
+from app.schemas.document_chunk import DocumentChunkRead
+from app.services.chunking_service import create_chunks_from_extracted_text
 from app.services.extraction_service import (
     extract_text_from_document,
     validate_file_exists,
@@ -167,6 +170,28 @@ def get_document_status(
     }
 
 
+@router.get("/{document_id}/chunks", response_model=list[DocumentChunkRead])
+def get_document_chunks(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    document = get_user_document(
+        document_id=document_id,
+        db=db,
+        current_user=current_user,
+    )
+
+    chunks = (
+        db.query(DocumentChunk)
+        .filter(DocumentChunk.document_id == document.id)
+        .order_by(DocumentChunk.chunk_index.asc())
+        .all()
+    )
+
+    return chunks
+
+
 @router.post("/{document_id}/process")
 def process_document(
     document_id: int,
@@ -212,9 +237,43 @@ def process_document(
                 "file_type": document.file_type,
                 "status": DOCUMENT_STATUS_FAILED,
                 "text_length": 0,
+                "chunk_count": 0,
                 "message": "No text could be extracted from this document.",
                 "extracted_text": "",
             }
+
+        text_chunks = create_chunks_from_extracted_text(extracted_text)
+
+        if not text_chunks:
+            document.status = DOCUMENT_STATUS_FAILED
+            db.commit()
+
+            return {
+                "document_id": document.id,
+                "original_filename": document.original_filename,
+                "file_type": document.file_type,
+                "status": DOCUMENT_STATUS_FAILED,
+                "text_length": len(extracted_text),
+                "chunk_count": 0,
+                "message": "Text was extracted, but no chunks could be created.",
+                "extracted_text": extracted_text,
+            }
+
+        db.query(DocumentChunk).filter(
+            DocumentChunk.document_id == document.id
+        ).delete(synchronize_session=False)
+
+        chunk_records = [
+            DocumentChunk(
+                document_id=document.id,
+                page_number=chunk.page_number,
+                chunk_index=chunk.chunk_index,
+                text=chunk.text,
+            )
+            for chunk in text_chunks
+        ]
+
+        db.add_all(chunk_records)
 
         document.status = DOCUMENT_STATUS_PROCESSED
         db.commit()
@@ -226,7 +285,8 @@ def process_document(
             "file_type": document.file_type,
             "status": DOCUMENT_STATUS_PROCESSED,
             "text_length": len(extracted_text),
-            "message": "Document processed successfully.",
+            "chunk_count": len(chunk_records),
+            "message": "Document processed and chunked successfully.",
             "extracted_text": extracted_text,
         }
 
