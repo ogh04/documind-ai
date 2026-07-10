@@ -2,7 +2,15 @@ from functools import lru_cache
 from uuid import NAMESPACE_DNS, uuid5
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    ScoredPoint,
+    VectorParams,
+)
 
 from app.core.config import settings
 from app.models.document import Document
@@ -88,3 +96,43 @@ def upsert_document_chunks_to_qdrant(
     )
 
     return len(points)
+
+
+def search_similar_chunks(
+    query_vector: list[float],
+    user_id: int,
+    top_k: int = 5,
+    document_id: int | None = None,
+) -> list[ScoredPoint]:
+    ensure_qdrant_collection_exists()
+
+    must_conditions = [
+        FieldCondition(
+            key="user_id",
+            match=MatchValue(value=user_id),
+        )
+    ]
+
+    if document_id is not None:
+        must_conditions.append(
+            FieldCondition(
+                key="document_id",
+                match=MatchValue(value=document_id),
+            )
+        )
+
+    query_filter = Filter(
+        must=must_conditions,
+    )
+
+    client = get_qdrant_client()
+
+    search_results = client.query_points(
+        collection_name=settings.qdrant_collection_name,
+        query=query_vector,
+        query_filter=query_filter,
+        limit=top_k,
+        with_payload=True,
+    )
+
+    return search_results.points
