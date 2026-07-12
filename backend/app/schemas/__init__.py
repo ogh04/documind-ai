@@ -5,6 +5,11 @@ from app.schemas.token import Token, TokenData
 from app.schemas.document_chunk import DocumentChunkCreate, DocumentChunkRead
 from app.schemas.query import QueryRequest, QueryResponse, QueryResult
 from app.schemas.answer import AnswerRequest, AnswerResponse, AnswerSource
+from app.schemas.hybrid_search import (
+    HybridSearchRequest,
+    HybridSearchResponse,
+    HybridSearchResult,
+)
 
 __all__ = [
     "UserCreate",
@@ -23,4 +28,7 @@ __all__ = [
     "AnswerRequest",
     "AnswerResponse",
     "AnswerSource",
+    "HybridSearchRequest",
+    "HybridSearchResponse",
+    "HybridSearchResult",
 ]
