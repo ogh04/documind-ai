@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.auth import get_current_user
+from app.core.config import settings
 from app.models.user import User
 from app.schemas.answer import AnswerRequest, AnswerResponse, AnswerSource
+from app.services.answer_service import (
+    NO_ANSWER_MESSAGE,
+    filter_sources_by_min_score,
+)
 from app.services.embedding_service import embed_query
 from app.services.llm_service import generate_answer
 from app.services.qdrant_service import search_similar_chunks
@@ -45,17 +50,31 @@ def answer_question(
                 )
             )
 
+        reliable_sources = filter_sources_by_min_score(
+            sources=sources,
+            min_score=settings.answer_min_score,
+        )
+
         answer = generate_answer(
             question=answer_request.question,
-            sources=sources,
+            sources=reliable_sources,
         )
+
+        if answer.strip() == NO_ANSWER_MESSAGE:
+            return AnswerResponse(
+                question=answer_request.question,
+                answer=NO_ANSWER_MESSAGE,
+                context_used=False,
+                sources_count=0,
+                sources=[],
+            )
 
         return AnswerResponse(
             question=answer_request.question,
             answer=answer,
-            context_used=bool(sources),
-            sources_count=len(sources),
-            sources=sources,
+            context_used=bool(reliable_sources),
+            sources_count=len(reliable_sources),
+            sources=reliable_sources,
         )
 
     except Exception as error:

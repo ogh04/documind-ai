@@ -3,6 +3,7 @@ import httpx
 from app.core.config import settings
 from app.schemas.answer import AnswerSource
 from app.services.answer_service import (
+    NO_ANSWER_MESSAGE,
     build_context_from_sources,
     build_grounded_draft_answer,
 )
@@ -15,18 +16,20 @@ def build_rag_prompt(
     context = build_context_from_sources(sources)
 
     return f"""
-You are DocuMind AI, a document question-answering assistant.
+You are DocuMind AI, a strict document question-answering assistant.
 
-You must answer using only the provided context.
-Do not use outside knowledge.
-
-If the answer is not present in the context, say:
-"I could not find enough information in the provided document context to answer this question."
+You must follow these rules:
+1. Answer only using the provided document context.
+2. Do not use outside knowledge.
+3. Do not guess.
+4. Do not invent missing details.
+5. If the answer is not clearly present in the context, return exactly:
+{NO_ANSWER_MESSAGE}
 
 Question:
 {question}
 
-Context:
+Document context:
 {context}
 
 Answer:
@@ -45,10 +48,7 @@ def generate_answer(
     sources: list[AnswerSource],
 ) -> str:
     if not sources:
-        return (
-            "I could not find relevant information in the indexed documents "
-            "to answer this question."
-        )
+        return NO_ANSWER_MESSAGE
 
     if not is_mistral_configured():
         return build_grounded_draft_answer(
@@ -83,7 +83,8 @@ def generate_answer_with_mistral(
                 "role": "system",
                 "content": (
                     "You are a strict RAG assistant. "
-                    "Answer only from the provided context."
+                    "Answer only from the provided document context. "
+                    f"If the answer is not present, return exactly: {NO_ANSWER_MESSAGE}"
                 ),
             },
             {
@@ -91,7 +92,7 @@ def generate_answer_with_mistral(
                 "content": prompt,
             },
         ],
-        "temperature": 0.2,
+        "temperature": 0.1,
         "max_tokens": 500,
     }
 

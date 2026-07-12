@@ -1,6 +1,20 @@
 from app.schemas.answer import AnswerSource
 
 
+NO_ANSWER_MESSAGE = "I cannot find this information in the provided document."
+
+
+def filter_sources_by_min_score(
+    sources: list[AnswerSource],
+    min_score: float,
+) -> list[AnswerSource]:
+    return [
+        source
+        for source in sources
+        if source.score >= min_score
+    ]
+
+
 def build_context_from_sources(sources: list[AnswerSource]) -> str:
     context_parts: list[str] = []
 
@@ -27,16 +41,12 @@ def build_grounded_draft_answer(
     sources: list[AnswerSource],
 ) -> str:
     if not sources:
-        return (
-            "I could not find relevant information in the indexed documents "
-            "to answer this question."
-        )
+        return NO_ANSWER_MESSAGE
 
     context = build_context_from_sources(sources)
 
     return (
         "Based on the retrieved document context, the relevant information is:\n\n"
         f"{context}\n\n"
-        "This is a grounded draft answer generated only from the retrieved chunks. "
-        "A full LLM-generated answer will be added in the next step."
+        "This answer is generated only from the retrieved document context."
     )

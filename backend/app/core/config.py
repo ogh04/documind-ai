@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     mistral_model: str = "mistral-small-latest"
     mistral_api_url: str = "https://api.mistral.ai/v1/chat/completions"
 
+    answer_min_score: float = 0.55
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
