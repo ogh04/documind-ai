@@ -17,3 +17,4 @@ Pillow
 sentence-transformers
 qdrant-client
 httpx
+rank-bm25

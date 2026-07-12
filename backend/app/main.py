@@ -6,6 +6,7 @@ from sqlalchemy import text
 from app.api.answer import router as answer_router
 from app.api.auth import router as auth_router
 from app.api.documents import router as documents_router
+from app.api.keyword_search import router as keyword_search_router
 from app.api.query import router as query_router
 from app.database.database import Base, engine
 from app.models import Document, DocumentChunk, ParsingJob, User
@@ -29,6 +30,7 @@ app.include_router(auth_router)
 app.include_router(documents_router)
 app.include_router(query_router)
 app.include_router(answer_router)
+app.include_router(keyword_search_router)
 
 
 @app.get("/")
