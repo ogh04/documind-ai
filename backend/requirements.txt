@@ -16,3 +16,4 @@ pytesseract
 Pillow
 sentence-transformers
 qdrant-client
+httpx

@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.schemas.answer import AnswerRequest, AnswerResponse, AnswerSource
-from app.services.answer_service import build_grounded_draft_answer
 from app.services.embedding_service import embed_query
+from app.services.llm_service import generate_answer
 from app.services.qdrant_service import search_similar_chunks
 
 
@@ -45,7 +45,7 @@ def answer_question(
                 )
             )
 
-        answer = build_grounded_draft_answer(
+        answer = generate_answer(
             question=answer_request.question,
             sources=sources,
         )

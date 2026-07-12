@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     qdrant_port: int = 6333
     qdrant_collection_name: str = "documind_chunks"
 
+    llm_provider: str = "mistral"
+    mistral_api_key: str = ""
+    mistral_model: str = "mistral-small-latest"
+    mistral_api_url: str = "https://api.mistral.ai/v1/chat/completions"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
