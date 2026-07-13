@@ -1,0 +1,110 @@
+[
+  {
+    "id": "eval_001",
+    "question": "What is the document about?",
+    "expected_answer": "The document is about a multiclass classification project for chest X-ray images using a deep learning approach.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "summary"
+  },
+  {
+    "id": "eval_002",
+    "question": "Which medical image categories are mentioned in the document?",
+    "expected_answer": "The document mentions Covid-19, Pneumonia, and Normal chest X-ray categories.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_003",
+    "question": "What imaging modality is used in the project?",
+    "expected_answer": "The project uses chest X-ray images, also referred to as radiographies thoraciques.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_004",
+    "question": "Who is the author of the document?",
+    "expected_answer": "The author mentioned in the document is Omar GHILAN.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_005",
+    "question": "Who supervised the work?",
+    "expected_answer": "The work was supervised by Pr. Mourad NACHAOUI.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_006",
+    "question": "Which university is associated with the document?",
+    "expected_answer": "The document is associated with Université Sultan Moulay Slimane, FST Béni Mellal.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_007",
+    "question": "What department or field is mentioned in the document?",
+    "expected_answer": "The document mentions the Département Informatique and the AIDC field.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "eval_008",
+    "question": "What is the date shown in the document?",
+    "expected_answer": "The date shown in the document is 2 juillet 2026.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_009",
+    "question": "Does the document discuss lung disease classification?",
+    "expected_answer": "Yes. The document discusses multiclass classification of chest X-ray images including Covid-19, Pneumonia, and Normal classes.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "medium",
+    "type": "reasoning"
+  },
+  {
+    "id": "eval_010",
+    "question": "What type of AI approach is mentioned in the document?",
+    "expected_answer": "The document mentions a Deep Learning approach.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_011",
+    "question": "What is the capital city of Japan?",
+    "expected_answer": "I cannot find this information in the provided document.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": null,
+    "difficulty": "easy",
+    "type": "negative"
+  },
+  {
+    "id": "eval_012",
+    "question": "What is the price of gold in Morocco?",
+    "expected_answer": "I cannot find this information in the provided document.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": null,
+    "difficulty": "easy",
+    "type": "negative"
+  }
+]
