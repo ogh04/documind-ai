@@ -29,6 +29,11 @@ class Settings(BaseSettings):
 
     answer_min_score: float = 0.55
 
+    reranker_provider: str = "local"
+    reranker_model_name: str = "BAAI/bge-reranker-base"
+    reranker_candidate_limit: int = 50
+    reranker_top_k: int = 5
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

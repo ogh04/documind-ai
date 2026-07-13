@@ -10,6 +10,11 @@ from app.schemas.hybrid_search import (
     HybridSearchResponse,
     HybridSearchResult,
 )
+from app.schemas.rerank_search import (
+    RerankSearchRequest,
+    RerankSearchResponse,
+    RerankSearchResult,
+)
 
 __all__ = [
     "UserCreate",
@@ -31,4 +36,7 @@ __all__ = [
     "HybridSearchRequest",
     "HybridSearchResponse",
     "HybridSearchResult",
+    "RerankSearchRequest",
+    "RerankSearchResponse",
+    "RerankSearchResult",
 ]
