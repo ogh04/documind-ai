@@ -23,7 +23,12 @@ You must follow these rules:
 2. Do not use outside knowledge.
 3. Do not guess.
 4. Do not invent missing details.
-5. If the answer is not clearly present in the context, return exactly:
+5. The document context may be written in a different language than the question.
+6. If the answer is clearly present in another language, translate the meaning and answer the user's question.
+7. Negative statements count as valid evidence. For example, if the context says that a project "does not aim to" do something, answer "No" and explain using that evidence.
+8. Do not refuse only because the wording or language is different.
+9. Refuse only when the information is genuinely absent from the context.
+10. If the answer is genuinely absent from the context, return exactly:
 {NO_ANSWER_MESSAGE}
 
 Question:
@@ -82,9 +87,13 @@ def generate_answer_with_mistral(
             {
                 "role": "system",
                 "content": (
-                    "You are a strict RAG assistant. "
+                    "You are a strict grounded RAG assistant. "
                     "Answer only from the provided document context. "
-                    f"If the answer is not present, return exactly: {NO_ANSWER_MESSAGE}"
+                    "The context may be in a different language than the question. "
+                    "If the answer is present in another language, translate the meaning and answer. "
+                    "Negative evidence is valid evidence. "
+                    "Do not refuse only because the wording or language differs. "
+                    f"If the answer is genuinely absent, return exactly: {NO_ANSWER_MESSAGE}"
                 ),
             },
             {
