@@ -1,0 +1,182 @@
+[
+  {
+    "id": "cxr_eval_001",
+    "question": "What is the main topic of the report?",
+    "expected_answer": "The report is about an experimental reproduction of a multiclass Deep Learning approach for classifying chest X-ray images into Covid-19, Pneumonia, and Normal classes.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 4,
+    "difficulty": "easy",
+    "type": "summary"
+  },
+  {
+    "id": "cxr_eval_002",
+    "question": "Which three classes are used in the CXR classification task?",
+    "expected_answer": "The three classes are Covid-19, Pneumonia, and Normal.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 7,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_003",
+    "question": "Which two main data sources are used in the project?",
+    "expected_answer": "The project uses the COVID-19 Radiography Database from Kaggle and the COVID-19, Pneumonia and Normal Chest X-ray PA Dataset from Mendeley Data.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 12,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_004",
+    "question": "What is DS1a in this report?",
+    "expected_answer": "DS1a is the balanced version of Dataset 1, with 1345 images for each class: Covid-19, Normal, and Pneumonia.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 13,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_005",
+    "question": "What is DS1b in this report?",
+    "expected_answer": "DS1b is the unbalanced version of Dataset 1, containing 3616 Covid-19 images, 10192 Normal images, and 1345 Pneumonia images.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 13,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_006",
+    "question": "What is DS2 in this report?",
+    "expected_answer": "DS2 is a balanced dataset from Mendeley Data containing 1525 images for each class: Covid-19, Normal, and Pneumonia.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 13,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_007",
+    "question": "What train validation test split is used in the project?",
+    "expected_answer": "The project uses an 80% training, 10% validation, and 10% test split.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 14,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_008",
+    "question": "Which Deep Learning architectures are implemented in the project?",
+    "expected_answer": "The implemented architectures are VGG16, InceptionResNetV2, and a custom CNN.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 8,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_009",
+    "question": "Which models use transfer learning in the report?",
+    "expected_answer": "VGG16 and InceptionResNetV2 use transfer learning with ImageNet pre-trained weights.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 16,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_010",
+    "question": "What input size is used for VGG16 and InceptionResNetV2?",
+    "expected_answer": "VGG16 and InceptionResNetV2 use input images resized to 224 x 224 pixels.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 16,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_011",
+    "question": "What data augmentation technique is applied during training?",
+    "expected_answer": "The project applies random rotation with rotation_range equal to 15 degrees using ImageDataGenerator.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 17,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_012",
+    "question": "Which loss function is used for VGG16?",
+    "expected_answer": "VGG16 uses categorical crossentropy as the loss function.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 18,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_013",
+    "question": "Which loss function is used for InceptionResNetV2 and the custom CNN?",
+    "expected_answer": "InceptionResNetV2 and the custom CNN use focal loss.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 18,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_014",
+    "question": "Which evaluation metrics are used to assess the models?",
+    "expected_answer": "The models are evaluated using accuracy, sensitivity or recall, specificity, precision, F1-score, and confusion matrices.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 20,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_015",
+    "question": "Which model obtains the best performance on DS1a?",
+    "expected_answer": "The custom CNN obtains the best performance on DS1a, with an accuracy of 0.9284 and an F1-score of 0.9288.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 24,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_016",
+    "question": "Which model obtains the best performance on DS1b?",
+    "expected_answer": "The custom CNN obtains the best performance on DS1b, with an accuracy of 0.9216 and an F1-score of 0.9070.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 25,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_017",
+    "question": "Which model obtains the best accuracy on DS2?",
+    "expected_answer": "The custom CNN obtains the best accuracy on DS2, with an accuracy of 0.9020.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 26,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_018",
+    "question": "What does the report conclude about the custom CNN across the datasets?",
+    "expected_answer": "The report concludes that the custom CNN achieves the best overall performance across DS1a, DS1b, and DS2.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 27,
+    "difficulty": "medium",
+    "type": "reasoning"
+  },
+  {
+    "id": "cxr_eval_019",
+    "question": "What is Grad-CAM used for in this project?",
+    "expected_answer": "Grad-CAM is used to visualize the image regions that contribute most to the model decision and to check whether the model focuses on relevant lung regions.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 32,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "cxr_eval_020",
+    "question": "Does the report propose a clinical diagnostic tool ready for real medical use?",
+    "expected_answer": "No. The report states that the project is an experimental study and does not aim to provide a clinical diagnostic tool ready for practical medical use.",
+    "expected_source_filename": "cxr_deep_learning_report.pdf.pdf",
+    "expected_page": 8,
+    "difficulty": "medium",
+    "type": "negative"
+  }
+]
