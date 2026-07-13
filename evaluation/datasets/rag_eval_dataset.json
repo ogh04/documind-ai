@@ -106,5 +106,77 @@
     "expected_page": null,
     "difficulty": "easy",
     "type": "negative"
+  },
+  {
+    "id": "eval_013",
+    "question": "What is the full title of the document?",
+    "expected_answer": "The full title is Classification Multiclasses des Images CXR.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_014",
+    "question": "Is the document related to computer science?",
+    "expected_answer": "Yes. The document is related to computer science because it mentions the Département Informatique and a Deep Learning approach.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "medium",
+    "type": "reasoning"
+  },
+  {
+    "id": "eval_015",
+    "question": "Does the document mention a project about natural language processing?",
+    "expected_answer": "I cannot find this information in the provided document.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": null,
+    "difficulty": "medium",
+    "type": "negative"
+  },
+  {
+    "id": "eval_016",
+    "question": "What disease classes are used in the chest X-ray classification task?",
+    "expected_answer": "The disease-related classes mentioned are Covid-19 and Pneumonia, with Normal as the non-disease category.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "medium",
+    "type": "fact"
+  },
+  {
+    "id": "eval_017",
+    "question": "Is this document about a binary classification task?",
+    "expected_answer": "No. The document refers to a multiclass classification task with Covid-19, Pneumonia, and Normal categories.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "medium",
+    "type": "reasoning"
+  },
+  {
+    "id": "eval_018",
+    "question": "Which program or track is mentioned in the document?",
+    "expected_answer": "The document mentions the AIDC program or track.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
+  },
+  {
+    "id": "eval_019",
+    "question": "Does the document mention Qdrant or vector databases?",
+    "expected_answer": "I cannot find this information in the provided document.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": null,
+    "difficulty": "medium",
+    "type": "negative"
+  },
+  {
+    "id": "eval_020",
+    "question": "What is the academic institution mentioned after the university name?",
+    "expected_answer": "The academic institution mentioned is FST Béni Mellal.",
+    "expected_source_filename": "Cookie_Beamer_Theme.pdf",
+    "expected_page": 1,
+    "difficulty": "easy",
+    "type": "fact"
   }
 ]
