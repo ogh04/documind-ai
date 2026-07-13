@@ -1,0 +1,60 @@
+{
+  "metrics": [
+    {
+      "name": "context_precision",
+      "display_name": "Context Precision",
+      "score_range": "0 to 1",
+      "higher_is_better": true,
+      "component": "retriever",
+      "description": "Measures whether the retrieved chunks are relevant and ranked high for the user question.",
+      "required_fields": [
+        "question",
+        "retrieved_contexts"
+      ]
+    },
+    {
+      "name": "context_recall",
+      "display_name": "Context Recall",
+      "score_range": "0 to 1",
+      "higher_is_better": true,
+      "component": "retriever",
+      "description": "Measures whether the retrieved contexts contain the information needed to answer the question.",
+      "required_fields": [
+        "question",
+        "expected_answer",
+        "retrieved_contexts"
+      ]
+    },
+    {
+      "name": "faithfulness",
+      "display_name": "Faithfulness",
+      "score_range": "0 to 1",
+      "higher_is_better": true,
+      "component": "generator",
+      "description": "Measures whether the generated answer is factually supported by the retrieved context.",
+      "required_fields": [
+        "question",
+        "answer",
+        "retrieved_contexts"
+      ]
+    },
+    {
+      "name": "answer_relevance",
+      "display_name": "Answer Relevance",
+      "score_range": "0 to 1",
+      "higher_is_better": true,
+      "component": "generator",
+      "description": "Measures whether the generated answer directly answers the user question.",
+      "required_fields": [
+        "question",
+        "answer"
+      ]
+    }
+  ],
+  "notes": {
+    "context_precision": "Useful for checking ranking quality.",
+    "context_recall": "Useful for checking whether important evidence was retrieved.",
+    "faithfulness": "Useful for detecting hallucinations.",
+    "answer_relevance": "Useful for checking whether the answer addresses the question."
+  }
+}
