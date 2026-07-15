@@ -19,6 +19,10 @@ from app.services.embedding_service import embed_query
 from app.services.fusion_service import FusionInputResult, fuse_search_results
 from app.services.llm_service import generate_answer
 from app.services.qdrant_service import search_similar_chunks
+from app.services.ragas_service import (
+    apply_ragas_evaluation,
+    choose_winner_by_answer_quality,
+)
 from app.services.reranker_service import rerank_fused_results
 
 
@@ -298,16 +302,59 @@ def compare_retrieval_pipelines(
 
     winner: str | None = None
 
-    if reference_answer is None:
+    clean_reference_answer = (
+        reference_answer.strip()
+        if reference_answer is not None and reference_answer.strip()
+        else None
+    )
+
+    if clean_reference_answer is None:
         notes.append(
             "RAGAS scores and answer quality are not computed because no reference_answer was provided."
         )
+
+    else:
+        method_a = apply_ragas_evaluation(
+            question=question,
+            method_result=method_a,
+            reference_answer=clean_reference_answer,
+        )
+
+        method_b = apply_ragas_evaluation(
+            question=question,
+            method_result=method_b,
+            reference_answer=clean_reference_answer,
+        )
+
+        winner = choose_winner_by_answer_quality(
+            method_a=method_a,
+            method_b=method_b,
+        )
+
+        if (
+            method_a.ragas_scores.status == "computed_ragas"
+            and method_b.ragas_scores.status == "computed_ragas"
+        ):
+            notes.append(
+                "RAGAS scores were computed because reference_answer was provided."
+            )
+
+        else:
+            notes.append(
+                "RAGAS evaluation was attempted, but at least one method did not complete successfully."
+            )
+            notes.append(
+                f"Method A RAGAS status: {method_a.ragas_scores.status}"
+            )
+            notes.append(
+                f"Method B RAGAS status: {method_b.ragas_scores.status}"
+            )
 
     return ComparisonResponse(
         question=question,
         document_id=document_id,
         top_k=top_k,
-        has_reference_answer=reference_answer is not None,
+        has_reference_answer=clean_reference_answer is not None,
         method_a=method_a,
         method_b=method_b,
         winner=winner,

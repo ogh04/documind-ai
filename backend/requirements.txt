@@ -18,3 +18,7 @@ sentence-transformers
 qdrant-client
 httpx
 rank-bm25
+ragas==0.1.21
+datasets==2.20.0
+langchain-community==0.2.16
+langchain-mistralai==0.1.13
