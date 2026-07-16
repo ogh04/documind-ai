@@ -12,6 +12,7 @@ from app.api.query import router as query_router
 from app.api.rerank_search import router as rerank_search_router
 from app.api.comparison import router as comparison_router
 from app.api.comparison_dashboard import router as comparison_dashboard_router
+from app.api.dashboard_page import router as dashboard_page_router
 
 from app.database.database import Base, engine
 
@@ -41,6 +42,7 @@ app.include_router(hybrid_search_router)
 app.include_router(rerank_search_router)
 app.include_router(comparison_router)
 app.include_router(comparison_dashboard_router)
+app.include_router(dashboard_page_router)
 
 
 @app.get("/")
