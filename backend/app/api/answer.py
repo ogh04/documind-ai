@@ -1,3 +1,5 @@
+import logging
+import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -5,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
 from app.core.config import settings
+from app.core.logging_config import get_logger, log_event
 from app.database.database import get_db
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
@@ -22,6 +25,8 @@ from app.services.reranker_service import rerank_fused_results
 router = APIRouter(
     tags=["Answer"],
 )
+
+logger = get_logger(__name__)
 
 
 def build_keyword_payload(
@@ -188,13 +193,60 @@ def build_no_answer_response(question: str) -> AnswerResponse:
     )
 
 
+def get_question_preview(question: str, max_length: int = 200) -> str:
+    clean_question = " ".join(question.split())
+
+    if len(clean_question) <= max_length:
+        return clean_question
+
+    return f"{clean_question[:max_length]}..."
+
+
+def log_query_completed(
+    *,
+    user_id: int,
+    document_id: int | None,
+    top_k: int,
+    question: str,
+    answer_strategy: str,
+    context_used: bool,
+    sources_count: int,
+    total_duration_ms: float,
+) -> None:
+    log_event(
+        logger=logger,
+        event="query_completed",
+        message="Answer query completed",
+        user_id=user_id,
+        document_id=document_id,
+        top_k=top_k,
+        question_preview=get_question_preview(question),
+        answer_strategy=answer_strategy,
+        context_used=context_used,
+        sources_count=sources_count,
+        total_duration_ms=round(total_duration_ms, 2),
+    )
+
+
 @router.post("/answer", response_model=AnswerResponse)
 def answer_question(
     answer_request: AnswerRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    start_time = time.perf_counter()
+
     try:
+        log_event(
+            logger=logger,
+            event="query_started",
+            message="Answer query started",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            top_k=answer_request.top_k,
+            question_preview=get_question_preview(answer_request.question),
+        )
+
         candidate_limit = min(
             max(
                 settings.reranker_candidate_limit,
@@ -202,6 +254,8 @@ def answer_question(
             ),
             50,
         )
+
+        semantic_start_time = time.perf_counter()
 
         query_vector = embed_query(answer_request.question)
 
@@ -211,6 +265,10 @@ def answer_question(
             top_k=candidate_limit,
             document_id=answer_request.document_id,
         )
+
+        semantic_duration_ms = (
+            time.perf_counter() - semantic_start_time
+        ) * 1000
 
         semantic_results: list[FusionInputResult] = []
 
@@ -228,6 +286,20 @@ def answer_question(
                     payload=payload,
                 )
             )
+
+        log_event(
+            logger=logger,
+            event="semantic_search_completed",
+            message="Semantic search completed for answer query",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            candidate_limit=candidate_limit,
+            semantic_points_count=len(semantic_points),
+            semantic_results_count=len(semantic_results),
+            duration_ms=round(semantic_duration_ms, 2),
+        )
+
+        keyword_start_time = time.perf_counter()
 
         chunks_query = (
             db.query(DocumentChunk)
@@ -257,6 +329,10 @@ def answer_question(
             top_k=candidate_limit,
         )
 
+        keyword_duration_ms = (
+            time.perf_counter() - keyword_start_time
+        ) * 1000
+
         keyword_results: list[FusionInputResult] = []
         seen_keyword_chunk_ids: set[int] = set()
 
@@ -279,10 +355,40 @@ def answer_question(
                 )
             )
 
+        log_event(
+            logger=logger,
+            event="keyword_search_completed",
+            message="Keyword search completed for answer query",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            available_chunks_count=len(chunks),
+            keyword_matches_count=len(keyword_matches),
+            keyword_results_count=len(keyword_results),
+            duration_ms=round(keyword_duration_ms, 2),
+        )
+
+        fusion_start_time = time.perf_counter()
+
         fused_results = fuse_search_results(
             semantic_results=semantic_results,
             keyword_results=keyword_results,
             top_k=candidate_limit,
+        )
+
+        fusion_duration_ms = (
+            time.perf_counter() - fusion_start_time
+        ) * 1000
+
+        log_event(
+            logger=logger,
+            event="fusion_completed",
+            message="Semantic and keyword results fused",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            semantic_results_count=len(semantic_results),
+            keyword_results_count=len(keyword_results),
+            fused_results_count=len(fused_results),
+            duration_ms=round(fusion_duration_ms, 2),
         )
 
         fallback_top_k = min(
@@ -290,10 +396,27 @@ def answer_question(
             candidate_limit,
         )
 
+        rerank_start_time = time.perf_counter()
+
         reranked_results = rerank_fused_results(
             question=answer_request.question,
             fused_results=fused_results,
             top_k=fallback_top_k,
+        )
+
+        rerank_duration_ms = (
+            time.perf_counter() - rerank_start_time
+        ) * 1000
+
+        log_event(
+            logger=logger,
+            event="reranking_completed",
+            message="Reranking completed for answer query",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            fallback_top_k=fallback_top_k,
+            reranked_results_count=len(reranked_results),
+            duration_ms=round(rerank_duration_ms, 2),
         )
 
         primary_sources = build_answer_sources_from_reranked_results(
@@ -307,14 +430,58 @@ def answer_question(
         )
 
         if not primary_sources and not keyword_fallback_sources:
+            total_duration_ms = (time.perf_counter() - start_time) * 1000
+
+            log_query_completed(
+                user_id=current_user.id,
+                document_id=answer_request.document_id,
+                top_k=answer_request.top_k,
+                question=answer_request.question,
+                answer_strategy="no_context",
+                context_used=False,
+                sources_count=0,
+                total_duration_ms=total_duration_ms,
+            )
+
             return build_no_answer_response(answer_request.question)
+
+        primary_llm_start_time = time.perf_counter()
 
         answer = generate_answer(
             question=answer_request.question,
             sources=primary_sources,
         )
 
+        primary_llm_duration_ms = (
+            time.perf_counter() - primary_llm_start_time
+        ) * 1000
+
+        log_event(
+            logger=logger,
+            event="answer_generation_completed",
+            message="Primary answer generation completed",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            answer_strategy="primary_reranked_sources",
+            context_used=answer.strip() != NO_ANSWER_MESSAGE,
+            sources_count=len(primary_sources),
+            duration_ms=round(primary_llm_duration_ms, 2),
+        )
+
         if answer.strip() != NO_ANSWER_MESSAGE:
+            total_duration_ms = (time.perf_counter() - start_time) * 1000
+
+            log_query_completed(
+                user_id=current_user.id,
+                document_id=answer_request.document_id,
+                top_k=answer_request.top_k,
+                question=answer_request.question,
+                answer_strategy="primary_reranked_sources",
+                context_used=True,
+                sources_count=len(primary_sources),
+                total_duration_ms=total_duration_ms,
+            )
+
             return AnswerResponse(
                 question=answer_request.question,
                 answer=answer,
@@ -336,12 +503,43 @@ def answer_question(
             max_sources=max(answer_request.top_k * 2, 10),
         )
 
+        fallback_llm_start_time = time.perf_counter()
+
         fallback_answer = generate_answer(
             question=answer_request.question,
             sources=merged_fallback_sources,
         )
 
+        fallback_llm_duration_ms = (
+            time.perf_counter() - fallback_llm_start_time
+        ) * 1000
+
+        log_event(
+            logger=logger,
+            event="answer_generation_completed",
+            message="Fallback answer generation completed",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            answer_strategy="merged_fallback_sources",
+            context_used=fallback_answer.strip() != NO_ANSWER_MESSAGE,
+            sources_count=len(merged_fallback_sources),
+            duration_ms=round(fallback_llm_duration_ms, 2),
+        )
+
         if fallback_answer.strip() != NO_ANSWER_MESSAGE:
+            total_duration_ms = (time.perf_counter() - start_time) * 1000
+
+            log_query_completed(
+                user_id=current_user.id,
+                document_id=answer_request.document_id,
+                top_k=answer_request.top_k,
+                question=answer_request.question,
+                answer_strategy="merged_fallback_sources",
+                context_used=True,
+                sources_count=len(merged_fallback_sources),
+                total_duration_ms=total_duration_ms,
+            )
+
             return AnswerResponse(
                 question=answer_request.question,
                 answer=fallback_answer,
@@ -350,12 +548,43 @@ def answer_question(
                 sources=merged_fallback_sources,
             )
 
+        keyword_llm_start_time = time.perf_counter()
+
         keyword_only_answer = generate_answer(
             question=answer_request.question,
             sources=keyword_fallback_sources,
         )
 
+        keyword_llm_duration_ms = (
+            time.perf_counter() - keyword_llm_start_time
+        ) * 1000
+
+        log_event(
+            logger=logger,
+            event="answer_generation_completed",
+            message="Keyword-only answer generation completed",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            answer_strategy="keyword_only_sources",
+            context_used=keyword_only_answer.strip() != NO_ANSWER_MESSAGE,
+            sources_count=len(keyword_fallback_sources),
+            duration_ms=round(keyword_llm_duration_ms, 2),
+        )
+
         if keyword_only_answer.strip() != NO_ANSWER_MESSAGE:
+            total_duration_ms = (time.perf_counter() - start_time) * 1000
+
+            log_query_completed(
+                user_id=current_user.id,
+                document_id=answer_request.document_id,
+                top_k=answer_request.top_k,
+                question=answer_request.question,
+                answer_strategy="keyword_only_sources",
+                context_used=True,
+                sources_count=len(keyword_fallback_sources),
+                total_duration_ms=total_duration_ms,
+            )
+
             return AnswerResponse(
                 question=answer_request.question,
                 answer=keyword_only_answer,
@@ -364,10 +593,41 @@ def answer_question(
                 sources=keyword_fallback_sources,
             )
 
+        total_duration_ms = (time.perf_counter() - start_time) * 1000
+
+        log_query_completed(
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            top_k=answer_request.top_k,
+            question=answer_request.question,
+            answer_strategy="no_answer_after_fallbacks",
+            context_used=False,
+            sources_count=0,
+            total_duration_ms=total_duration_ms,
+        )
+
         return build_no_answer_response(answer_request.question)
 
-    except Exception as error:
+    except Exception:
+        total_duration_ms = (time.perf_counter() - start_time) * 1000
+
+        logger.exception(
+            "Answer query failed",
+            extra={
+                "event": "query_failed",
+                "extra_fields": {
+                    "user_id": current_user.id,
+                    "document_id": answer_request.document_id,
+                    "top_k": answer_request.top_k,
+                    "question_preview": get_question_preview(
+                        answer_request.question
+                    ),
+                    "duration_ms": round(total_duration_ms, 2),
+                },
+            },
+        )
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Answer generation failed: {str(error)}",
-        ) from error
+            detail="Answer generation failed.",
+        )
