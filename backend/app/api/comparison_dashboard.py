@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
+from app.core.rate_limiter import EVAL_RATE_LIMIT, enforce_user_rate_limit
 from app.database.database import get_db
 from app.models.user import User
 from app.schemas.comparison import ComparisonRequest
@@ -23,9 +24,16 @@ router = APIRouter(
 )
 def compare_methods_for_dashboard(
     comparison_request: ComparisonRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=EVAL_RATE_LIMIT,
+    )
+
     try:
         comparison = compare_retrieval_pipelines(
             question=comparison_request.question,

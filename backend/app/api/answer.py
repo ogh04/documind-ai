@@ -1,13 +1,13 @@
-import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
 from app.core.config import settings
 from app.core.logging_config import get_logger, log_event
+from app.core.rate_limiter import RAG_RATE_LIMIT, enforce_user_rate_limit
 from app.database.database import get_db
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
@@ -231,10 +231,17 @@ def log_query_completed(
 @router.post("/answer", response_model=AnswerResponse)
 def answer_question(
     answer_request: AnswerRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     start_time = time.perf_counter()
+
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=RAG_RATE_LIMIT,
+    )
 
     try:
         log_event(

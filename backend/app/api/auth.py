@@ -1,11 +1,18 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.rate_limiter import (
+    AUTH_LOGIN_RATE_LIMIT,
+    AUTH_REGISTER_RATE_LIMIT,
+    READ_RATE_LIMIT,
+    enforce_ip_rate_limit,
+    enforce_user_rate_limit,
+)
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.database.database import get_db
 from app.models.user import User
@@ -27,8 +34,14 @@ oauth2_scheme = OAuth2PasswordBearer(
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register_user(
     user_data: UserCreate,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    enforce_ip_rate_limit(
+        request=request,
+        rule=AUTH_REGISTER_RATE_LIMIT,
+    )
+
     existing_user = (
         db.query(User)
         .filter(User.email == user_data.email)
@@ -56,9 +69,15 @@ def register_user(
 
 @router.post("/login", response_model=Token)
 def login_user(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
+    enforce_ip_rate_limit(
+        request=request,
+        rule=AUTH_LOGIN_RATE_LIMIT,
+    )
+
     user = (
         db.query(User)
         .filter(User.email == form_data.username)
@@ -138,6 +157,13 @@ def get_current_user(
 
 @router.get("/me", response_model=UserRead)
 def read_current_user(
+    request: Request,
     current_user: User = Depends(get_current_user),
 ):
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=READ_RATE_LIMIT,
+    )
+
     return current_user

@@ -1,9 +1,10 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
+from app.core.rate_limiter import RAG_RATE_LIMIT, enforce_user_rate_limit
 from app.database.database import get_db
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
@@ -48,9 +49,16 @@ def build_keyword_payload(
 @router.post("/hybrid-search", response_model=HybridSearchResponse)
 def hybrid_search_documents(
     search_request: HybridSearchRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=RAG_RATE_LIMIT,
+    )
+
     candidate_limit = min(
         max(search_request.top_k * 4, 20),
         50,

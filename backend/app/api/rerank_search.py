@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
 from app.core.config import settings
+from app.core.rate_limiter import RERANK_RATE_LIMIT, enforce_user_rate_limit
 from app.database.database import get_db
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
@@ -50,9 +51,16 @@ def build_keyword_payload(
 @router.post("/rerank-search", response_model=RerankSearchResponse)
 def rerank_search_documents(
     search_request: RerankSearchRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=RERANK_RATE_LIMIT,
+    )
+
     candidate_limit = search_request.candidate_limit or settings.reranker_candidate_limit
 
     candidate_limit = min(

@@ -3,12 +3,19 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
 from app.core.config import settings
 from app.core.logging_config import get_logger, log_event
+from app.core.rate_limiter import (
+    CHUNKS_READ_RATE_LIMIT,
+    DOCUMENT_PROCESSING_RATE_LIMIT,
+    READ_RATE_LIMIT,
+    UPLOAD_RATE_LIMIT,
+    enforce_user_rate_limit,
+)
 from app.database.database import get_db
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
@@ -93,11 +100,18 @@ def get_user_document(
     status_code=status.HTTP_201_CREATED,
 )
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     start_time = time.perf_counter()
+
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=UPLOAD_RATE_LIMIT,
+    )
 
     try:
         if not file.filename:
@@ -251,9 +265,16 @@ async def upload_document(
 @router.get("/{document_id}/status")
 def get_document_status(
     document_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=READ_RATE_LIMIT,
+    )
+
     document = get_user_document(
         document_id=document_id,
         db=db,
@@ -274,9 +295,16 @@ def get_document_status(
 @router.get("/{document_id}/chunks", response_model=list[DocumentChunkRead])
 def get_document_chunks(
     document_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=CHUNKS_READ_RATE_LIMIT,
+    )
+
     document = get_user_document(
         document_id=document_id,
         db=db,
@@ -296,10 +324,17 @@ def get_document_chunks(
 @router.post("/{document_id}/index")
 def index_document(
     document_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     start_time = time.perf_counter()
+
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=DOCUMENT_PROCESSING_RATE_LIMIT,
+    )
 
     document = get_user_document(
         document_id=document_id,
@@ -455,10 +490,17 @@ def index_document(
 @router.post("/{document_id}/process")
 def process_document(
     document_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     start_time = time.perf_counter()
+
+    enforce_user_rate_limit(
+        request=request,
+        current_user=current_user,
+        rule=DOCUMENT_PROCESSING_RATE_LIMIT,
+    )
 
     document = get_user_document(
         document_id=document_id,
