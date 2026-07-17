@@ -17,6 +17,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 
 COPY app ./app
+COPY tests ./tests
+COPY pytest.ini ./pytest.ini
 
 EXPOSE 8000
 
