@@ -264,13 +264,46 @@ def answer_question(
 
         semantic_start_time = time.perf_counter()
 
+        embedding_start_time = time.perf_counter()
+
         query_vector = embed_query(answer_request.question)
+
+        embedding_duration_ms = (
+            time.perf_counter() - embedding_start_time
+        ) * 1000
+
+        log_event(
+            logger=logger,
+            event="query_embedding_completed",
+            message="Query embedding completed for answer query",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            vector_size=len(query_vector),
+            duration_ms=round(embedding_duration_ms, 2),
+        )
+
+        qdrant_start_time = time.perf_counter()
 
         semantic_points = search_similar_chunks(
             query_vector=query_vector,
             user_id=current_user.id,
             top_k=candidate_limit,
             document_id=answer_request.document_id,
+        )
+
+        qdrant_search_duration_ms = (
+            time.perf_counter() - qdrant_start_time
+        ) * 1000
+
+        log_event(
+            logger=logger,
+            event="qdrant_search_completed",
+            message="Qdrant semantic search completed for answer query",
+            user_id=current_user.id,
+            document_id=answer_request.document_id,
+            top_k=candidate_limit,
+            results_count=len(semantic_points),
+            duration_ms=round(qdrant_search_duration_ms, 2),
         )
 
         semantic_duration_ms = (
@@ -303,6 +336,9 @@ def answer_question(
             candidate_limit=candidate_limit,
             semantic_points_count=len(semantic_points),
             semantic_results_count=len(semantic_results),
+            embedding_duration_ms=round(embedding_duration_ms, 2),
+            qdrant_search_duration_ms=round(qdrant_search_duration_ms, 2),
+            semantic_pipeline_duration_ms=round(semantic_duration_ms, 2),
             duration_ms=round(semantic_duration_ms, 2),
         )
 
@@ -472,6 +508,7 @@ def answer_question(
             answer_strategy="primary_reranked_sources",
             context_used=answer.strip() != NO_ANSWER_MESSAGE,
             sources_count=len(primary_sources),
+            llm_response_duration_ms=round(primary_llm_duration_ms, 2),
             duration_ms=round(primary_llm_duration_ms, 2),
         )
 
@@ -530,6 +567,7 @@ def answer_question(
             answer_strategy="merged_fallback_sources",
             context_used=fallback_answer.strip() != NO_ANSWER_MESSAGE,
             sources_count=len(merged_fallback_sources),
+            llm_response_duration_ms=round(fallback_llm_duration_ms, 2),
             duration_ms=round(fallback_llm_duration_ms, 2),
         )
 
@@ -575,6 +613,7 @@ def answer_question(
             answer_strategy="keyword_only_sources",
             context_used=keyword_only_answer.strip() != NO_ANSWER_MESSAGE,
             sources_count=len(keyword_fallback_sources),
+            llm_response_duration_ms=round(keyword_llm_duration_ms, 2),
             duration_ms=round(keyword_llm_duration_ms, 2),
         )
 

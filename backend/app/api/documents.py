@@ -419,6 +419,7 @@ def index_document(
             embedding_count=len(embeddings),
             embedding_provider=settings.embedding_provider,
             embedding_model=settings.embedding_model_name,
+            embedding_duration_ms=round(embedding_duration_ms, 2),
             duration_ms=round(embedding_duration_ms, 2),
         )
 
@@ -450,7 +451,7 @@ def index_document(
             indexed_chunks=indexed_count,
             collection=settings.qdrant_collection_name,
             vector_size=settings.embedding_vector_size,
-            qdrant_duration_ms=round(qdrant_duration_ms, 2),
+            qdrant_upsert_duration_ms=round(qdrant_duration_ms, 2),
             total_duration_ms=round(total_duration_ms, 2),
         )
 
@@ -674,6 +675,8 @@ def process_document(
             document_id=document.id,
             text_length=len(extracted_text),
             chunk_count=len(chunk_records),
+            extraction_duration_ms=round(extraction_duration_ms, 2),
+            chunking_duration_ms=round(chunking_duration_ms, 2),
             total_duration_ms=round(total_duration_ms, 2),
         )
 
