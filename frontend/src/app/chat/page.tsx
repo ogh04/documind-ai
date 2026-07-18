@@ -1,8 +1,10 @@
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppShell } from "@/components/AppShell";
 
 export default function ChatPage() {
   return (
-    <AppShell
+    <ProtectedRoute>
+      <AppShell
       title="Chat"
       description="Ask grounded questions against your indexed documents using the RAG backend."
     >
@@ -46,6 +48,7 @@ export default function ChatPage() {
           </p>
         </aside>
       </section>
-    </AppShell>
+      </AppShell>
+    </ProtectedRoute>
   );
 }

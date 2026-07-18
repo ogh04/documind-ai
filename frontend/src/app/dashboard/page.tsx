@@ -1,3 +1,4 @@
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Link from "next/link";
 
 import { AppShell } from "@/components/AppShell";
@@ -27,7 +28,8 @@ const stats = [
 
 export default function DashboardPage() {
   return (
-    <AppShell
+    <ProtectedRoute>
+      <AppShell
       title="Dashboard"
       description="High-level overview of your private document intelligence workspace."
     >
@@ -76,6 +78,7 @@ export default function DashboardPage() {
           </ul>
         </div>
       </section>
-    </AppShell>
+      </AppShell>
+    </ProtectedRoute>
   );
 }

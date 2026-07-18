@@ -1,3 +1,4 @@
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Link from "next/link";
 
 import { AppShell } from "@/components/AppShell";
@@ -6,7 +7,8 @@ const emptyDocuments = [];
 
 export default function DocumentsPage() {
   return (
-    <AppShell
+    <ProtectedRoute>
+      <AppShell
       title="Documents"
       description="Manage uploaded files, processing state, and indexed document chunks."
     >
@@ -37,6 +39,7 @@ export default function DocumentsPage() {
           </div>
         ) : null}
       </section>
-    </AppShell>
+      </AppShell>
+    </ProtectedRoute>
   );
 }

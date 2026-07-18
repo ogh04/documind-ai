@@ -1,8 +1,10 @@
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppShell } from "@/components/AppShell";
 
 export default function UploadPage() {
   return (
-    <AppShell
+    <ProtectedRoute>
+      <AppShell
       title="Upload"
       description="Upload documents that will later be processed, chunked, embedded, and indexed."
     >
@@ -35,6 +37,7 @@ export default function UploadPage() {
           </div>
         </div>
       </section>
-    </AppShell>
+      </AppShell>
+    </ProtectedRoute>
   );
 }

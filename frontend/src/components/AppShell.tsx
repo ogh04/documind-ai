@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ReactNode } from "react";
 
+import { LogoutButton } from "@/components/LogoutButton";
 import { appNavigation } from "@/lib/navigation";
 
 type AppShellProps = {
@@ -37,6 +38,7 @@ export function AppShell({ children, title, description }: AppShellProps) {
           <span className="mt-1 block font-mono text-cyan-300">
             localhost:8000
           </span>
+          <LogoutButton />
         </div>
       </aside>
 
