@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str
     qdrant_url: str
+    qdrant_api_key: str = ""
+    cors_allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     secret_key: str
     algorithm: str = "HS256"

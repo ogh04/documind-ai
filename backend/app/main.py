@@ -16,6 +16,7 @@ from app.api.comparison import router as comparison_router
 from app.api.comparison_dashboard import router as comparison_dashboard_router
 from app.api.dashboard_page import router as dashboard_page_router
 
+from app.core.config import settings
 from app.core.logging_config import get_logger, log_event, setup_logging
 from app.database.database import Base, engine
 
@@ -77,6 +78,14 @@ async def lifespan(app: FastAPI):
         )
 
 
+
+def get_cors_allowed_origins() -> list[str]:
+    return [
+        origin.strip()
+        for origin in settings.cors_allowed_origins.split(",")
+        if origin.strip()
+    ]
+
 app = FastAPI(
     title="DocuMind AI",
     description="Multilingual RAG-based Document Intelligence Platform",
@@ -86,10 +95,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=get_cors_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
