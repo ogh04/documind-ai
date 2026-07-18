@@ -15,4 +15,8 @@ export const appNavigation = [
     label: "Chat",
     href: "/chat",
   },
+  {
+    label: "Comparison",
+    href: "/comparison",
+  },
 ];
